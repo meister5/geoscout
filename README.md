@@ -185,4 +185,5 @@ domain). Solar position from the low-precision algorithm in the *Astronomical
 Almanac*. Built on [M5Unified](https://github.com/m5stack/M5Unified) and
 [M5GFX](https://github.com/m5stack/M5GFX).
 
-MIT licensed. See [LICENSE](LICENSE).
+MIT licensed — see [LICENSE](LICENSE), and [NOTICE](NOTICE) for the
+third-party data and algorithm credits in full.

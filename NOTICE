@@ -1,0 +1,34 @@
+geoscout
+Copyright (c) 2026 Eren Altuntas
+
+This software is licensed under the MIT License. See LICENSE.
+
+--------------------------------------------------------------------------------
+Third-party data
+--------------------------------------------------------------------------------
+
+The world geometry compiled into lib/core/worlddata.cpp is derived from Natural
+Earth 1:110m Physical and Cultural vectors, by way of tools/genmap.py.
+
+Natural Earth is in the public domain:
+
+    "All versions of Natural Earth raster and vector map data found on this
+    website are in the public domain. You may use the maps in any manner,
+    including modifying the content and design, electronic dissemination, and
+    offset printing. The primary authors, Tom Patterson and Nathaniel Vaughn
+    Kelso, and all other contributors renounce all financial claim to the maps
+    and invite you to use them for personal, educational, and commercial
+    purposes. No permission is needed to use Natural Earth. Crediting the
+    authors is unnecessary."
+
+    https://www.naturalearthdata.com/about/terms-of-use/
+
+Crediting them is unnecessary, so this file does it anyway.
+
+--------------------------------------------------------------------------------
+Algorithms
+--------------------------------------------------------------------------------
+
+The subsolar point in lib/core/solar.cpp implements the low-precision solar
+position algorithm published in the Astronomical Almanac (US Naval Observatory /
+UK Hydrographic Office).

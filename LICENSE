@@ -19,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The world geometry compiled into lib/core/worlddata.cpp is derived from
-Natural Earth 1:110m Physical and Cultural vectors. Natural Earth is in the
-public domain: "No permission is needed to use Natural Earth. Crediting the
-authors is unnecessary." <https://www.naturalearthdata.com/about/terms-of-use/>
