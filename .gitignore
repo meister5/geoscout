@@ -1,0 +1,27 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# host test binaries and preview renders
+build/
+
+# local toolchains / virtualenvs
+.venv/
+venv/
+
+# build artefacts
+*.bin
+*.elf
+*.map
+
+# generator inputs: the Natural Earth GeoJSON is fetched, not vendored.
+# What ships is lib/core/worlddata.cpp, which is generated from it.
+tools/naturalearth/
+
+.DS_Store
+.vscode/
+
+# ...except the released images kept at the repo root, so M5Launcher's
+# OTA > Favorites can point straight at a raw URL.
+!/*.bin
