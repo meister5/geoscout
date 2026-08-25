@@ -6,9 +6,11 @@ cap is left alone — it is not initialised, not powered up and not transmitted
 on. Its pin map is recorded at the bottom anyway, because it is the obvious
 thing to reach for next.
 
-Source: [M5Stack Cap LoRa-1262 docs](https://docs.m5stack.com/en/cap/Cap_LoRa-1262)
-(SKU U214) and the [Cardputer ADV docs](https://docs.m5stack.com/en/core/Cardputer%20ADV).
-The cap plugs into the ADV's rear 2×7 Cap-Bus header.
+Every pin, part number and figure below is taken from M5Stack's own
+documentation and cross-checked against the source in this repo:
+[Cardputer-ADV](https://docs.m5stack.com/en/core/Cardputer-ADV) and
+[Cap LoRa-1262](https://docs.m5stack.com/en/cap/Cap_LoRa-1262) (SKU U214).
+The cap plugs into the ADV's rear EXT 2.54-14P header.
 
 ## GNSS — ATGM336H-6N (AT6668 core, UART)
 
@@ -45,10 +47,19 @@ symptom is dropped sentences under load, not an error.
 This is the single biggest difference from the original Cardputer, and it is not
 in the display or the SD slot:
 
-- **Cardputer v1.1** — a scanned key matrix driven through 74HC138 decoders on
-  GPIO 8 and 9.
-- **Cardputer ADV** — a **TCA8418 keypad controller** on the internal I²C bus
-  (**G8 = SDA, G9 = SCL**, INT on G11).
+- **Cardputer / Cardputer v1.1** — a scanned key matrix driven through
+  **74HC138** decoders on GPIO 8 and 9.
+- **Cardputer ADV** — a **TCA8418RTWR** keypad scan controller on the internal
+  I²C bus (**G8 = SDA, G9 = SCL, G11 = INT**, address 0x34), scanning a 7×8
+  electrical matrix behind the 4×14 / 56-key physical layout.
+
+M5Stack's own comparison table puts it plainly — *Keyboard IO Exp.:*
+`Cardputer-Adv → TCA8418RTWR`, `Cardputer v1.1 → 74HC138`,
+`Cardputer → 74HC138`.
+
+The trap is that **the ADV and the v1.1 carry the same core module**, the
+Stamp-S3A. You cannot tell them apart by the module, which is exactly why
+`M5.getBoard()` has to probe, and why trusting it is not optional.
 
 Two consequences:
 
@@ -63,9 +74,11 @@ Two consequences:
 2. **Guard on the board type or you wreck the I²C bus.**
    `Keyboard_Class::begin()` picks its reader from `M5.getBoard()`. If that ever
    comes back as the original Cardputer on ADV hardware, the reader it installs
-   drives G8 and G9 as 74HC138 *outputs* — and on the ADV those are the I²C bus
-   shared by the audio codec, the IMU and the Cap's IO expander. geoscout
-   refuses to boot rather than risk it:
+   drives G8 and G9 as 74HC138 *outputs* — and on the ADV those two pins are a
+   shared I²C bus carrying the **ES8311** audio codec, the **BMI270** IMU, the
+   TCA8418 itself, the Grove Port.A and the cap's **PI4IOE5V6408** expander.
+   Driving a five-device bus as a pair of decoder outputs is not a bug you
+   recover from at runtime, so geoscout refuses to boot instead:
 
    ```cpp
    if (M5.getBoard() != m5::board_t::board_M5CardputerADV) return false;
@@ -73,13 +86,15 @@ Two consequences:
 
    `main.cpp` turns that into a halt screen reading *"Cardputer ADV required"*.
 
-The **display is not** a difference: both boards carry the same 1.14" 240×135
-ST7789, and M5GFX drives it identically.
+The **display is not** a difference: both boards carry the same **ST7789V2**,
+1.14", 240 × 135, and M5GFX drives it identically.
 
 ## Memory — there is no PSRAM
 
-The ADV's Stamp-S3A is an **ESP32-S3FN8**: 8 MB flash, **no PSRAM**, roughly
-320 KB of usable SRAM. That shapes the whole renderer:
+The ADV's Stamp-S3A is an **ESP32-S3FN8** — dual-core Xtensa LX7 at 240 MHz,
+**8 MB flash, no PSRAM**. The `FN8` suffix *is* the statement: 8 MB embedded
+flash, no embedded PSRAM. The linker gives this build 327,680 bytes of DRAM.
+That shapes the whole renderer:
 
 - The full-frame `M5Canvas` is created with `setPsram(false)` — 240 × 135 × 16bpp
   = **64,800 bytes**, about a fifth of RAM, and the single largest allocation in
@@ -99,23 +114,66 @@ sits in reset.
 
 ## Pin map
 
-GNSS (UART): **G13 → GPS-RX**, **G15 ← GPS-TX**.
+Straight from the M5Stack documentation.
 
-I²C (shared with the HY2.0-4P Grove port and the internal bus): **G8 = SDA**,
-**G9 = SCL**.
+**GNSS (UART1)** — the two pins geoscout actually drives:
 
-Cap-Bus header order (left 1–7, right 8–14): `GPS_TX, GPS_RX, SCL, SDA, 5V_OUT,
-GND, 5V_IN` | `LoRa_RST, LoRa_IRQ, LoRa_BUSY, LoRa_SCK, LoRa_MOSI, LoRa_MISO,
-LoRa_NSS`.
+| Cardputer-Adv | G13 | G15 |
+|---|---|---|
+| Cap LoRa-1262 (GPS) | GPS-RX | GPS-TX |
+
+Read the direction from the cap's side: **G13 is the Cardputer's TX** into the
+receiver's RX, **G15 is the Cardputer's RX** from the receiver's TX. The ADV's
+own header labels them `UART_TX = G13` and `UART_RX = G15`, and
+`HardwareSerial::begin()` takes them in the order `(baud, config, rxPin, txPin)`
+— so `begin(115200, SERIAL_8N1, 15, 13)`. Swapping the pair is silent: no error,
+no bytes, an app that acquires forever.
+
+**I²C** — one bus, five devices:
+
+| Cardputer-Adv | G8 | G9 |
+|---|---|---|
+| TCA8418RTWR (keyboard) | SDA | SCL |
+| ES8311 (codec) | SDA | SCL |
+| BMI270 (IMU) | SDA | SCL |
+| Cap LoRa-1262 (PI4IOE5V6408) | SDA | SCL |
+| Grove HY2.0-4P Port.A | SDA | SCL |
+
+**microSD** — geoscout opens none of this, but note which pins it is:
+
+| Stamp-S3A | G12 | G14 | G40 | G39 |
+|---|---|---|---|---|
+| microSD | CS | MOSI | CLK | MISO |
+
+**Display:**
+
+| Stamp-S3A | G38 | G33 | G34 | G35 | G36 | G37 |
+|---|---|---|---|---|---|---|
+| ST7789V2 | DISP_BL | RST | RS | DAT | SCK | CS |
+
+**EXT 2.54-14P header** (the ADV side, which is what the cap mates with):
+
+| FUNC | PIN | LEFT | RIGHT | PIN | FUNC |
+|---|---|---|---|---|---|
+| RESET | G3 | 1 | 2 | 5VIN | |
+| INT | G4 | 3 | 4 | GND | |
+| BUSY | G6 | 5 | 6 | 5VOUT | |
+| SCK | G40 | 7 | 8 | G8 | I2C_SDA |
+| MOSI | G14 | 9 | 10 | G9 | I2C_SCL |
+| MISO | G39 | 11 | 12 | G13 | UART_TX |
+| CS | G5 | 13 | 14 | G15 | UART_RX |
+
+Other things on the ADV worth knowing are there: IR TX on **G44**, battery ADC
+on **G10**, Grove Port.CUSTOM on **G1/G2** (not I²C — that is Port.A on G8/G9).
 
 ## The radio geoscout does not use
 
 Recorded for whoever adds it. **Semtech SX1262**, 868–923 MHz, +22 dBm max,
 −147 dBm sensitivity, on SPI:
 
-| Signal | NSS | MOSI | MISO | SCK | IRQ (DIO1) | RST | BUSY |
+| Cardputer-Adv | G3 | G4 | G6 | G40 | G14 | G39 | G5 |
 |---|---|---|---|---|---|---|---|
-| GPIO | **G5** | G14 | G39 | G40 | **G4** | **G3** | **G6** |
+| Cap LoRa-1262 (LoRa) | RST | IRQ | BUSY | SCK | MOSI | MISO | NSS |
 
 Three things bite, and all three are already solved in
 [lorascout](https://github.com/meister5/lorascout):
@@ -132,3 +190,10 @@ Three things bite, and all three are already solved in
 
 Transmitting also brings regulatory duties that reading GPS does not: 868 MHz is
 the EU ISM band with duty-cycle limits, 915 MHz is US ISM.
+
+## Sources
+
+- [M5Stack — Cardputer-ADV](https://docs.m5stack.com/en/core/Cardputer-ADV)
+  (note the hyphen; `Cardputer%20ADV` 404s)
+- [M5Stack — Cap LoRa-1262](https://docs.m5stack.com/en/cap/Cap_LoRa-1262), SKU U214
+- [M5Stack — Cap LoRa868 Arduino tutorial](https://docs.m5stack.com/en/arduino/projects/cap/cap_lora868)

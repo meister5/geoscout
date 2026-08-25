@@ -15,12 +15,19 @@ Maidenhead.
 There is no SD card involved and nothing is written to one. Everything here runs
 out of flash and NVS.
 
-> **Cardputer ADV only.** The Cap LoRa-1262 carries the ATGM336H GNSS receiver
-> this firmware reads, and it mounts on the rear Cap-Bus header — present on the
-> Cardputer ADV and CardputerZero, **absent on the original Cardputer v1.1**.
-> The ADV's keyboard is also a different part (a TCA8418 I²C controller, not the
-> v1.1's scanned matrix), and this firmware refuses to boot on anything else
-> rather than drive the wrong pins. See [docs/HARDWARE.md](docs/HARDWARE.md).
+> **Cardputer ADV only**, and the firmware enforces it. The Cap LoRa-1262 carries
+> the ATGM336H GNSS receiver this firmware reads, and it mounts on the rear
+> **EXT 2.54-14P** header — M5Stack lists the cap as being for the Cardputer-Adv
+> and CardputerZero, and the original **Cardputer v1.1 has only the HY2.0-4P
+> port**, so it cannot physically carry the cap.
+>
+> The keyboard is a second, sharper reason. The ADV scans its keys with a
+> **TCA8418** I²C controller where the v1.1 uses **74HC138** decoders on G8 and
+> G9 — and on the ADV those two pins are a shared I²C bus carrying the codec,
+> the IMU and the cap's IO expander. Since both boards use the same Stamp-S3A
+> module, you cannot tell them apart by the module. geoscout halts on anything
+> that is not an ADV rather than drive a five-device bus as decoder outputs.
+> See [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ---
 
