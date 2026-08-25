@@ -6,6 +6,9 @@
 # host test binaries and preview renders
 build/
 
+# pio imports the custom test runner, which leaves bytecode next to it
+__pycache__/
+
 # local toolchains / virtualenvs
 .venv/
 venv/
