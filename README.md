@@ -8,34 +8,33 @@
 geoscout puts the whole planet on a 240×135 screen and a red dot on the part of
 it you are standing on. It renders a shaded 3D Earth with real coastlines,
 borders and lakes, spins it under your finger, draws the day/night terminator
-where the sun actually puts it right now, and reads your position off the cap's
-GNSS receiver in whatever format you need it in — decimal, DMS, UTM, MGRS or
-Maidenhead.
+where the sun currently puts it, and reads your position off the cap's GNSS
+receiver in decimal, DMS, UTM, MGRS or Maidenhead.
 
-There is no SD card involved and nothing is written to one. Everything here runs
-out of flash and NVS.
+There is no SD card involved and nothing is written to one. Everything runs out
+of flash and NVS.
 
-> **Cardputer ADV only**, and the firmware enforces it. The Cap LoRa-1262 carries
-> the ATGM336H GNSS receiver this firmware reads, and it mounts on the rear
-> **EXT 2.54-14P** header — M5Stack lists the cap as being for the Cardputer-Adv
-> and CardputerZero, and the original **Cardputer v1.1 has only the HY2.0-4P
-> port**, so it cannot physically carry the cap.
+> **Cardputer ADV only**, and the firmware enforces it. The Cap LoRa-1262
+> carries the ATGM336H GNSS receiver this firmware reads, and it mounts on the
+> rear **EXT 2.54-14P** header. M5Stack lists the cap as being for the
+> Cardputer-Adv and CardputerZero; the original **Cardputer v1.1 has only the
+> HY2.0-4P port**, so it cannot physically carry the cap.
 >
-> The keyboard is a second, sharper reason. The ADV scans its keys with a
-> **TCA8418** I²C controller where the v1.1 uses **74HC138** decoders on G8 and
-> G9 — and on the ADV those two pins are a shared I²C bus carrying the codec,
-> the IMU and the cap's IO expander. Since both boards use the same Stamp-S3A
-> module, you cannot tell them apart by the module. geoscout halts on anything
-> that is not an ADV rather than drive a five-device bus as decoder outputs.
-> See [docs/HARDWARE.md](docs/HARDWARE.md).
+> The keyboard is the second reason. The ADV scans its keys with a **TCA8418**
+> I²C controller where the v1.1 uses **74HC138** decoders on G8 and G9, and on
+> the ADV those two pins are a shared I²C bus carrying the codec, the IMU and
+> the cap's IO expander. Both boards use the same Stamp-S3A module, so they
+> cannot be told apart by the module alone. geoscout halts on anything that is
+> not an ADV rather than drive a five-device bus as decoder outputs. See
+> [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ---
 
 ## Apps
 
-geoscout boots into a menu whose rows carry live subtitles — the globe row shows
-where the view is pointed, the position row shows your current fix — so the menu
-itself is a status screen.
+geoscout boots into a menu whose rows carry live subtitles. The globe row shows
+where the view is pointed and the position row shows your current fix, so the
+menu doubles as a status screen.
 
 | # | App | What it does |
 |---|---|---|
@@ -47,8 +46,8 @@ itself is a status screen.
 
 ### Global Position
 
-The fix, in whichever of these you asked for — `←`/`→` cycles without leaving
-the screen:
+The fix, in whichever format you asked for. `←`/`→` cycles without leaving the
+screen:
 
 ```
 Decimal      52.370216 N    4.895168 E
@@ -60,12 +59,12 @@ MGRS         31U FU 29022 03906
 ```
 
 Below the readout: altitude, speed and course; satellite count, PDOP and the age
-of the fix. Before the first fix it shows an acquiring screen with a per-
-satellite C/N₀ bar, so a cold start looks like progress rather than like a hang.
+of the fix. Before the first fix it shows an acquiring screen with a
+per-satellite C/N₀ bar, so a cold start reads as progress instead of a hang.
 
 MGRS and UTM are computed on WGS84 with k₀ = 0.9996, including the Norway zone-32
-widening and the Svalbard 31/33/35/37 exceptions, and MGRS **truncates** rather
-than rounds — a grid reference names the square you are standing in. Both are
+widening and the Svalbard 31/33/35/37 exceptions. MGRS **truncates** rather than
+rounds, since a grid reference names the square you are standing in. Both are
 checked against PROJ and against the NGA-derived `mgrs` library in the test
 suite.
 
@@ -74,20 +73,20 @@ suite.
 An orthographic Earth built from Natural Earth 1:110m vectors: 130 coastline
 polylines, 308 borders and 22 lakes, 6,772 vertices in all, baked to flash as
 int16 unit vectors and projected in fixed point. It costs 42 KB of flash and no
-RAM at all.
+RAM.
 
-The day/night terminator is not a decoration painted on top — it is the real one.
-The subsolar point comes from the low-precision solar position algorithm in the
-Astronomical Almanac, fed by GNSS time, and a point is lit exactly when its dot
-product with the sun direction is positive. The ocean is filled by solving that
-same sign test per pixel, which makes a properly curved terminator cost three
+The day/night terminator is computed rather than drawn on. The subsolar point
+comes from the low-precision solar position algorithm in the Astronomical
+Almanac, fed by GNSS time, and a point is lit exactly when its dot product with
+the sun direction is positive. The ocean is filled by solving that same sign
+test per pixel, which brings a properly curved terminator down to three
 coefficients a frame and a handful of horizontal lines a row.
 
 Three modes, cycled with `Enter`:
 
-- **Follow** — the globe keeps your position under the centre
-- **Free** — you fly it yourself
-- **Spin** — it turns on its axis, which is what it does on a desk
+- **Follow**: the globe keeps your position under the centre
+- **Free**: you fly it yourself
+- **Spin**: it turns on its axis
 
 | Key | |
 |---|---|
@@ -103,11 +102,11 @@ Three modes, cycled with `Enter`:
 
 ### Sky View
 
-A polar plot of every satellite the receiver is tracking — azimuth around,
+A polar plot of every satellite the receiver is tracking: azimuth around,
 elevation in from the rim, rings at 30° and 60°. Satellites used in the fix are
-filled; the rest are outlines. The right-hand panel is a C/N₀ bar chart sorted
-loudest-first, each bar tagged with its RINEX constellation letter: **G**PS,
-GLONASS (**R**), **E** Galileo, Bei**D**ou as **C**, QZSS as **J**.
+filled and the rest are outlines. The right-hand panel is a C/N₀ bar chart
+sorted loudest-first, each bar tagged with its RINEX constellation letter: **G**
+for GPS, **R** for GLONASS, **E** for Galileo, **C** for BeiDou, **J** for QZSS.
 
 The ATGM336H is multi-constellation, so on a clear sky this fills up.
 
@@ -128,7 +127,7 @@ A prebuilt `geoscout-app.bin` sits at the repo root. Point M5Launcher's
 
 `lib/core` compiles with nothing but a C++17 compiler, and the geometry pass in
 `lib/core/render.{h,cpp}` is shared verbatim between the firmware and a host
-renderer. So you can look at exactly what the device would draw:
+renderer, so you can look at exactly what the device would draw:
 
 ```sh
 make preview
@@ -136,9 +135,9 @@ build/preview 52.37 4.89 1787579102 out.ppm     # lat lon unix-seconds
 python3 tools/ppm2png.py out.ppm out.png 4      # 4x nearest-neighbour scale
 ```
 
-That is how the terminator was verified: render Sydney at local midnight, and
-the face is dark with a lit arc on the bottom limb — which is the South
-Atlantic, where it genuinely is daytime.
+That is also how the terminator was checked: render Sydney at local midnight and
+the face comes out dark with a lit arc on the bottom limb, over the South
+Atlantic, where it is daytime.
 
 ### Regenerating the world
 
@@ -155,7 +154,7 @@ result as int16 triplets. Lower the tolerance for more coastline and more flash.
 
 ## Testing
 
-Five suites, ~29,500 assertions, all on the host compiler with `-Werror`:
+Five suites, roughly 29,500 assertions, all on the host compiler with `-Werror`:
 
 | Suite | What it pins down |
 |---|---|
@@ -192,5 +191,5 @@ domain). Solar position from the low-precision algorithm in the *Astronomical
 Almanac*. Built on [M5Unified](https://github.com/m5stack/M5Unified) and
 [M5GFX](https://github.com/m5stack/M5GFX).
 
-MIT licensed — see [LICENSE](LICENSE), and [NOTICE](NOTICE) for the
-third-party data and algorithm credits in full.
+MIT licensed. See [LICENSE](LICENSE), and [NOTICE](NOTICE) for the third-party
+data and algorithm credits in full.
