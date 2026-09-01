@@ -5,14 +5,15 @@
 
 **A pocket globe and GNSS console for the M5Stack Cardputer ADV with the Cap LoRa-1262.**
 
-geoscout puts the whole planet on a 240×135 screen and a red dot on the part of
-it you are standing on. It renders a shaded 3D Earth with real coastlines,
-borders and lakes, spins it under your finger, draws the day/night terminator
-where the sun currently puts it, and reads your position off the cap's GNSS
-receiver in decimal, DMS, UTM, MGRS or Maidenhead.
+I wrote geoscout to put the whole planet on a 240×135 screen, with a red dot on
+the part of it I am standing on. It renders a shaded 3D Earth with real
+coastlines, borders and lakes, spins it under your finger, draws the day/night
+terminator where the sun currently puts it, and reads your position off the
+cap's GNSS receiver in decimal, DMS, UTM, MGRS or Maidenhead. I run it on my own
+ADV with the cap fitted.
 
-There is no SD card involved and nothing is written to one. Everything runs out
-of flash and NVS.
+There is no SD card involved and I write nothing to one. Everything runs out of
+flash and NVS.
 
 > **Cardputer ADV only**, and the firmware enforces it. The Cap LoRa-1262
 > carries the ATGM336H GNSS receiver this firmware reads, and it mounts on the
@@ -24,17 +25,17 @@ of flash and NVS.
 > I²C controller where the v1.1 uses **74HC138** decoders on G8 and G9, and on
 > the ADV those two pins are a shared I²C bus carrying the codec, the IMU and
 > the cap's IO expander. Both boards use the same Stamp-S3A module, so they
-> cannot be told apart by the module alone. geoscout halts on anything that is
-> not an ADV rather than drive a five-device bus as decoder outputs. See
+> cannot be told apart by the module alone, so I halt on anything that is not an
+> ADV rather than drive a five-device bus as decoder outputs. See
 > [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ---
 
 ## Apps
 
-geoscout boots into a menu whose rows carry live subtitles. The globe row shows
-where the view is pointed and the position row shows your current fix, so the
-menu doubles as a status screen.
+I gave the menu rows live subtitles. The globe row shows where the view is
+pointed and the position row shows your current fix, so the menu doubles as a
+status screen.
 
 | # | App | What it does |
 |---|---|---|
@@ -59,28 +60,28 @@ MGRS         31U FU 29022 03906
 ```
 
 Below the readout: altitude, speed and course; satellite count, PDOP and the age
-of the fix. Before the first fix it shows an acquiring screen with a
-per-satellite C/N₀ bar, so a cold start reads as progress instead of a hang.
+of the fix. Before the first fix I show an acquiring screen with a per-satellite
+C/N₀ bar, so a cold start reads as progress instead of a hang.
 
-MGRS and UTM are computed on WGS84 with k₀ = 0.9996, including the Norway zone-32
-widening and the Svalbard 31/33/35/37 exceptions. MGRS **truncates** rather than
-rounds, since a grid reference names the square you are standing in. Both are
-checked against PROJ and against the NGA-derived `mgrs` library in the test
+I compute MGRS and UTM on WGS84 with k₀ = 0.9996, including the Norway zone-32
+widening and the Svalbard 31/33/35/37 exceptions. I **truncate** MGRS rather
+than round it, since a grid reference names the square you are standing in. I
+check both against PROJ and against the NGA-derived `mgrs` library in the test
 suite.
 
 ### 3D Globe
 
 An orthographic Earth built from Natural Earth 1:110m vectors: 130 coastline
-polylines, 308 borders and 22 lakes, 6,772 vertices in all, baked to flash as
-int16 unit vectors and projected in fixed point. It costs 42 KB of flash and no
-RAM.
+polylines, 308 borders and 22 lakes, 6,772 vertices in all, which I bake to
+flash as int16 unit vectors and project in fixed point. It costs 42 KB of flash
+and no RAM.
 
-The day/night terminator is computed rather than drawn on. The subsolar point
+I compute the day/night terminator rather than draw it on. The subsolar point
 comes from the low-precision solar position algorithm in the Astronomical
 Almanac, fed by GNSS time, and a point is lit exactly when its dot product with
-the sun direction is positive. The ocean is filled by solving that same sign
-test per pixel, which brings a properly curved terminator down to three
-coefficients a frame and a handful of horizontal lines a row.
+the sun direction is positive. I fill the ocean by solving that same sign test
+per pixel, which brings a properly curved terminator down to three coefficients
+a frame and a handful of horizontal lines a row.
 
 Three modes, cycled with `Enter`:
 
@@ -103,8 +104,8 @@ Three modes, cycled with `Enter`:
 ### Sky View
 
 A polar plot of every satellite the receiver is tracking: azimuth around,
-elevation in from the rim, rings at 30° and 60°. Satellites used in the fix are
-filled and the rest are outlines. The right-hand panel is a C/N₀ bar chart
+elevation in from the rim, rings at 30° and 60°. I fill the satellites used in
+the fix and outline the rest. The right-hand panel is a C/N₀ bar chart
 sorted loudest-first, each bar tagged with its RINEX constellation letter: **G**
 for GPS, **R** for GLONASS, **E** for Galileo, **C** for BeiDou, **J** for QZSS.
 
@@ -125,9 +126,9 @@ A prebuilt `geoscout-app.bin` sits at the repo root. Point M5Launcher's
 
 ### Seeing the globe without a device
 
-`lib/core` compiles with nothing but a C++17 compiler, and the geometry pass in
-`lib/core/render.{h,cpp}` is shared verbatim between the firmware and a host
-renderer, so you can look at exactly what the device would draw:
+`lib/core` compiles with nothing but a C++17 compiler, and I share the geometry
+pass in `lib/core/render.{h,cpp}` verbatim between the firmware and a host
+renderer, so you can look at exactly what the device draws:
 
 ```sh
 make preview
@@ -135,14 +136,14 @@ build/preview 52.37 4.89 1787579102 out.ppm     # lat lon unix-seconds
 python3 tools/ppm2png.py out.ppm out.png 4      # 4x nearest-neighbour scale
 ```
 
-That is also how the terminator was checked: render Sydney at local midnight and
+That is also how I checked the terminator: render Sydney at local midnight and
 the face comes out dark with a lit arc on the bottom limb, over the South
 Atlantic, where it is daytime.
 
 ### Regenerating the world
 
-`lib/core/worlddata.cpp` is generated, and committed, so an ordinary build needs
-no network and no Python:
+I generate `lib/core/worlddata.cpp` and commit it, so an ordinary build needs no
+network and no Python:
 
 ```sh
 python3 tools/genmap.py --tolerance 0.1
@@ -150,11 +151,13 @@ python3 tools/genmap.py --tolerance 0.1
 
 It reads the three Natural Earth GeoJSON layers, simplifies each ring with
 Douglas-Peucker, splits the polylines that cross the antimeridian, and writes the
-result as int16 triplets. Lower the tolerance for more coastline and more flash.
+result as int16 triplets. Lower the tolerance if you want more coastline and can
+spare the flash.
 
 ## Testing
 
-Five suites, roughly 29,500 assertions, all on the host compiler with `-Werror`:
+Five suites, roughly 29,500 assertions, all run on the host compiler with
+`-Werror`:
 
 | Suite | What it pins down |
 |---|---|
@@ -180,9 +183,9 @@ tools/          genmap.py, preview.cpp, ppm2png.py, package.sh
 ```
 
 Adding an app means subclassing `App`, implementing `name()` and `draw()`, and
-registering it in `main.cpp`. The shell owns the display, the canvas, the
-keyboard and the GNSS receiver, and hands each app a `Frame` with the current fix
-and subsolar point already resolved.
+registering it in `main.cpp`. I gave the shell the display, the canvas, the
+keyboard and the GNSS receiver, and it hands each app a `Frame` with the current
+fix and subsolar point already resolved.
 
 ## Credits
 
