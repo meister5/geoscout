@@ -9,8 +9,7 @@ I wrote geoscout to put the whole planet on a 240×135 screen, with a red dot on
 the part of it I am standing on. It renders a shaded 3D Earth with real
 coastlines, borders and lakes, spins it under your finger, draws the day/night
 terminator where the sun currently puts it, and reads your position off the
-cap's GNSS receiver in decimal, DMS, UTM, MGRS or Maidenhead. I run it on my own
-ADV with the cap fitted.
+cap's GNSS receiver in decimal, DMS, UTM, MGRS or Maidenhead.
 
 There is no SD card involved and I write nothing to one. Everything runs out of
 flash and NVS.
