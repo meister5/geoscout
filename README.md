@@ -3,195 +3,70 @@
 [![CI](https://github.com/meister5/geoscout/actions/workflows/ci.yml/badge.svg)](https://github.com/meister5/geoscout/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**A pocket globe and GNSS console for the M5Stack Cardputer ADV with the Cap LoRa-1262.**
+Pocket globe and GNSS console for the M5Stack Cardputer ADV with the Cap LoRa-1262.
 
-I wrote geoscout to put the whole planet on a 240×135 screen, with a red dot on
-the part of it I am standing on. It renders a shaded 3D Earth with real
-coastlines, borders and lakes, spins it under your finger, draws the day/night
-terminator where the sun currently puts it, and reads your position off the
-cap's GNSS receiver in decimal, DMS, UTM, MGRS or Maidenhead.
+## Features
 
-There is no SD card involved and I write nothing to one. Everything runs out of
-flash and NVS.
+- Shaded 3D Earth with coastlines, borders and lakes from Natural Earth 1:110m data
+- Day/night terminator computed from GNSS time
+- Position readout in decimal, DMS, DM.m, Maidenhead, UTM and MGRS
+- Sky view with a satellite polar plot and C/N0 bars, tagged by constellation (G, R, E, C, J)
+- Globe modes: Follow, Free, Spin
+- Settings for coordinate format, units, time zone, brightness and globe layers
+- No SD card needed; everything lives in flash and NVS
 
-> **Cardputer ADV only**, and the firmware enforces it. The Cap LoRa-1262
-> carries the ATGM336H GNSS receiver this firmware reads, and it mounts on the
-> rear **EXT 2.54-14P** header. M5Stack lists the cap as being for the
-> Cardputer-Adv and CardputerZero; the original **Cardputer v1.1 has only the
-> HY2.0-4P port**, so it cannot physically carry the cap.
->
-> The keyboard is the second reason. The ADV scans its keys with a **TCA8418**
-> I²C controller where the v1.1 uses **74HC138** decoders on G8 and G9, and on
-> the ADV those two pins are a shared I²C bus carrying the codec, the IMU and
-> the cap's IO expander. Both boards use the same Stamp-S3A module, so they
-> cannot be told apart by the module alone, so I halt on anything that is not an
-> ADV rather than drive a five-device bus as decoder outputs. See
-> [docs/HARDWARE.md](docs/HARDWARE.md).
+## Hardware
 
----
+- M5Stack Cardputer ADV
+- Cap LoRa-1262 (its ATGM336H GNSS receiver is what this firmware reads)
 
-## Apps
+Cardputer ADV only. The cap needs the rear Cap-Bus header, which the original Cardputer v1.1 lacks, and the firmware halts on any other board. Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 
-I gave the menu rows live subtitles. The globe row shows where the view is
-pointed and the position row shows your current fix, so the menu doubles as a
-status screen.
+## Install
 
-| # | App | What it does |
-|---|---|---|
-| 1 | **Global Position** | Your coordinates, large, in five formats |
-| 2 | **3D Globe** | A shaded Earth with the real terminator on it |
-| 3 | **Sky View** | Which satellites are up, where, and how loud |
-| 4 | **Settings** | Formats, units, time zone, brightness, globe layers |
-| 5 | **About** | Version, hardware, attribution, free heap |
+Prebuilt image: [geoscout-app.bin](https://raw.githubusercontent.com/meister5/geoscout/main/geoscout-app.bin).
 
-### Global Position
+1. Copy `geoscout-app.bin` to the SD card and install it from `SD` in M5Launcher, or
+2. point M5Launcher's `OTA > Favorites` at the raw URL above.
 
-The fix, in whichever format you asked for. `←`/`→` cycles without leaving the
-screen:
+## Usage
 
-```
-Decimal      52.370216 N    4.895168 E
-D M S        52 22' 12.8" N    4 53' 42.6" E
-D M.m        52 22.213' N      4 53.710' E
-Maidenhead   JO22ki
-UTM          31U 629022E 5803906N
-MGRS         31U FU 29022 03906
-```
+Main menu: Global Position, 3D Globe, Sky View, Settings, About.
 
-Below the readout: altitude, speed and course; satellite count, PDOP and the age
-of the fix. Before the first fix I show an acquiring screen with a per-satellite
-C/N₀ bar, so a cold start reads as progress instead of a hang.
-
-I compute MGRS and UTM on WGS84 with k₀ = 0.9996, including the Norway zone-32
-widening and the Svalbard 31/33/35/37 exceptions. I **truncate** MGRS rather
-than round it, since a grid reference names the square you are standing in. I
-check both against PROJ and against the NGA-derived `mgrs` library in the test
-suite.
-
-### 3D Globe
-
-An orthographic Earth built from Natural Earth 1:110m vectors: 130 coastline
-polylines, 308 borders and 22 lakes, 6,772 vertices in all, which I bake to
-flash as int16 unit vectors and project in fixed point. It costs 42 KB of flash
-and no RAM.
-
-I compute the day/night terminator rather than draw it on. The subsolar point
-comes from the low-precision solar position algorithm in the Astronomical
-Almanac, fed by GNSS time, and a point is lit exactly when its dot product with
-the sun direction is positive. I fill the ocean by solving that same sign test
-per pixel, which brings a properly curved terminator down to three coefficients
-a frame and a handful of horizontal lines a row.
-
-Three modes, cycled with `Enter`:
-
-- **Follow**: the globe keeps your position under the centre
-- **Free**: you fly it yourself
-- **Spin**: it turns on its axis
-
-| Key | |
+| Key | Action |
 |---|---|
-| `;` `.` `,` `/` | rotate |
-| `x` / `z` | zoom (radius 40–190 px) |
-| `Enter` | cycle Follow → Free → Spin |
-| `g` | graticule |
-| `n` | night shading |
-| `b` | borders |
-| `l` | lakes |
-| `h` | HUD |
-| `` ` `` | back to the menu |
+| `;` `.` | Menu up, down |
+| `Enter`, `Space`, `/` | Open the selected app |
+| `1`-`5` | Jump straight to an app |
+| `` ` `` or `del` | Back |
+| `,` `/` | Position screen: cycle coordinate format |
 
-### Sky View
+Globe:
 
-A polar plot of every satellite the receiver is tracking: azimuth around,
-elevation in from the rim, rings at 30° and 60°. I fill the satellites used in
-the fix and outline the rest. The right-hand panel is a C/N₀ bar chart
-sorted loudest-first, each bar tagged with its RINEX constellation letter: **G**
-for GPS, **R** for GLONASS, **E** for Galileo, **C** for BeiDou, **J** for QZSS.
-
-The ATGM336H is multi-constellation, so on a clear sky this fills up.
-
-## Building
-
-```sh
-pio run -e cardputer-adv -t upload      # flash over USB
-make test                               # the host test suites
-make preview                            # the host globe renderer
-tools/package.sh                        # the release image, gated on size + magic
-```
-
-A prebuilt `geoscout-app.bin` sits at the repo root. Point M5Launcher's
-**OTA → Favorites** at its raw URL, or copy it to the SD card and install it from
-**SD**.
-
-### Seeing the globe without a device
-
-`lib/core` compiles with nothing but a C++17 compiler, and I share the geometry
-pass in `lib/core/render.{h,cpp}` verbatim between the firmware and a host
-renderer, so you can look at exactly what the device draws:
-
-```sh
-make preview
-build/preview 52.37 4.89 1787579102 out.ppm     # lat lon unix-seconds
-python3 tools/ppm2png.py out.ppm out.png 4      # 4x nearest-neighbour scale
-```
-
-That is also how I checked the terminator: render Sydney at local midnight and
-the face comes out dark with a lit arc on the bottom limb, over the South
-Atlantic, where it is daytime.
-
-### Regenerating the world
-
-I generate `lib/core/worlddata.cpp` and commit it, so an ordinary build needs no
-network and no Python:
-
-```sh
-python3 tools/genmap.py --tolerance 0.1
-```
-
-It reads the three Natural Earth GeoJSON layers, simplifies each ring with
-Douglas-Peucker, splits the polylines that cross the antimeridian, and writes the
-result as int16 triplets. Lower the tolerance if you want more coastline and can
-spare the flash.
-
-## Testing
-
-Five suites, roughly 29,500 assertions, all run on the host compiler with
-`-Werror`:
-
-| Suite | What it pins down |
+| Key | Action |
 |---|---|
-| `geo` | UTM/MGRS against PROJ and NGA, Maidenhead, distance, formatting |
-| `nmea` | sentence parsing, checksums, GSV assembly, GSA used-in-fix runs |
-| `solar` | subsolar point, sun altitude, daylight phase |
-| `sphere` | projection stays inside the disc, basis stays orthonormal, limb clipping |
-| `render` | ocean spans tile every row with no gap or overlap, terminator sides |
+| `;` `.` `,` `/` | Rotate |
+| `x` / `z` | Zoom in / out |
+| `Enter` | Cycle Follow, Free, Spin |
+| `g` `n` `b` `l` `h` | Toggle graticule, night shading, borders, lakes, HUD |
+
+## Build
+
+Requires [PlatformIO](https://platformio.org/).
 
 ```sh
-make test
+pio run -e cardputer-adv -t upload   # build and flash over USB
+tools/package.sh                     # release image
+make test                            # host tests for lib/core (C++17 compiler only)
+make preview                         # host renderer for the globe
 ```
 
-## Layout
-
-```
-lib/core/       no Arduino headers, host-testable: geo, nmea, solar, sphere,
-                render, and the generated worlddata
-src/hal/        display, keys (TCA8418), gnss (UART1)
-src/shell/      the launcher, settings, theme, and the App interface
-src/apps/       position, globe, skyview, settings, about
-tools/          genmap.py, preview.cpp, ppm2png.py, package.sh
-```
-
-Adding an app means subclassing `App`, implementing `name()` and `draw()`, and
-registering it in `main.cpp`. I gave the shell the display, the canvas, the
-keyboard and the GNSS receiver, and it hands each app a `Frame` with the current
-fix and subsolar point already resolved.
+`lib/core/worlddata.cpp` is generated and committed. `python3 tools/genmap.py --tolerance 0.1` regenerates it from Natural Earth GeoJSON.
 
 ## Credits
 
-World geometry from [Natural Earth](https://www.naturalearthdata.com/) (public
-domain). Solar position from the low-precision algorithm in the *Astronomical
-Almanac*. Built on [M5Unified](https://github.com/m5stack/M5Unified) and
-[M5GFX](https://github.com/m5stack/M5GFX).
+World geometry from [Natural Earth](https://www.naturalearthdata.com/) (public domain). Solar position from the low-precision algorithm in the Astronomical Almanac. See [NOTICE](NOTICE).
 
-MIT licensed. See [LICENSE](LICENSE), and [NOTICE](NOTICE) for the third-party
-data and algorithm credits in full.
+## License
+
+MIT. See [LICENSE](LICENSE).
